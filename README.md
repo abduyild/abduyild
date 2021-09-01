@@ -1,6 +1,6 @@
 - 👋 Hi, I’m @abduyild
-- 👀 I’m interested in CS, Post-Quantum Security, IT-Security, Programming, AI and ML
-- 🌱 I’m currently learning Shortest Vector Problems in Euclidean Lattices, Python and Go
+- 👀 I’m interested in CS, IT-Security (especially Post-Quantum Security), Programming, AI and ML
+- 🌱 I’m currently a R&D Softwaredeveloper @IBM in the Cloud
 - 💞️ I’m looking to collaborate on Open-Source Projects
 - 📫 How to reach me: https://abdullahyildirim.tech/#contact
 
