@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Interessenten – Togg Admin{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block body %}
+<header class="admin-bar">
+  {% include "_logo.html" %}
+  <div class="bar-actions">
+    <a class="btn outline" href="{{ url_for('admin', q=q, interest=interest) }}">Aktualisieren</a>
+    <form method="post" action="{{ url_for('admin_logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn ghost icon" title="Abmelden" aria-label="Abmelden"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1H8M13 6l4 4-4 4M17 10H8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </form>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="title-row">
+    <h1 class="title">Interessenten</h1>
+    <span class="count">{{ leads|length }} von {{ stats.total }}</span>
+  </div>
+
+  <section class="stats">
+    <div class="stat"><span>Gesamt</span><strong>{{ stats.total }}</strong></div>
+    <div class="stat"><span>Testfahrt</span><strong class="accent">{{ stats.Testfahrt }}</strong></div>
+    <div class="stat"><span>Finanzierung</span><strong class="accent">{{ stats.Finanzierung }}</strong></div>
+    <div class="stat"><span>Heute</span><strong>{{ stats.today }}</strong></div>
+  </section>
+
+  <form method="get" class="search" id="search">
+    <input type="search" name="q" value="{{ q }}" placeholder="Suche: Name, E-Mail, Telefon, PLZ, Notizen …">
+    {% if interest %}<input type="hidden" name="interest" value="{{ interest }}">{% endif %}
+  </form>
+
+  <nav class="chips">
+    <a class="chip {{ 'active' if not interest }}" href="{{ url_for('admin', q=q) }}">Alle</a>
+    {% for i in interests %}
+      <a class="chip {{ 'active' if interest == i }}" href="{{ url_for('admin', q=q, interest=i) }}">{{ i }}</a>
+    {% endfor %}
+    <a class="chip" href="{{ url_for('export_csv', q=q, interest=interest) }}">CSV</a>
+    <a class="chip excel" href="{{ url_for('export_xlsx', q=q, interest=interest) }}">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 8h15M2.5 12h15M8 8v8.5" stroke="currentColor" stroke-width="1.6"/></svg>
+      Excel
+    </a>
+  </nav>
+
+  <section class="cards">
+    {% for l in leads %}
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h2>{{ l.name }}</h2>
+            <time>{{ l.created_at|de_date }}</time>
+          </div>
+          <div class="tags">
+            {% for i in l.interest_list %}<span class="tag {{ 'tf' if i == 'Testfahrt' else 'fi' }}">{{ i }}</span>{% endfor %}
+          </div>
+        </div>
+        <p class="contact"><a href="mailto:{{ l.email }}">{{ l.email }}</a></p>
+        {% set meta = [l.phone, l.zip_code]|select|list %}
+        {% if meta %}<p class="meta">
+          {% if l.phone %}<a href="tel:{{ l.phone }}">{{ l.phone }}</a>{% endif %}{% if l.phone and l.zip_code %} · {% endif %}{{ l.zip_code }}
+        </p>{% endif %}
+        {% if l.notes %}<p class="notes">{{ l.notes }}</p>{% endif %}
+        <form method="post" action="{{ url_for('admin_delete', lead_id=l.id) }}" class="card-foot"
+              data-confirm="Interessent „{{ l.name }}“ wirklich löschen?" onsubmit="return confirm(this.dataset.confirm);">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="q" value="{{ q }}">
+          <input type="hidden" name="interest" value="{{ interest }}">
+          <button class="link">Löschen</button>
+        </form>
+      </article>
+    {% else %}
+      <p class="empty">Keine Interessenten gefunden.</p>
+    {% endfor %}
+  </section>
+</main>
+{% endblock %}

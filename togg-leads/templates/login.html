@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Admin – Togg{% endblock %}
+{% block body %}
+<main class="page center narrow">
+  <header class="brand">{% include "_logo.html" %}</header>
+  <h1 class="title">Admin-Login</h1>
+  <form method="post" class="lead-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% for msg in get_flashed_messages() %}<p class="err">{{ msg }}</p>{% endfor %}
+    <label class="field">
+      <span class="lbl">Passwort</span>
+      <input type="password" name="password" autofocus autocomplete="current-password">
+    </label>
+    <button type="submit" class="btn primary wide">Anmelden</button>
+  </form>
+</main>
+{% endblock %}

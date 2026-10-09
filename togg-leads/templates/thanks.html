@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Vielen Dank – Togg{% endblock %}
+{% block body %}
+<main class="page center">
+  <header class="brand">{% include "_logo.html" %}</header>
+  <div class="check-circle">✓</div>
+  <h1 class="headline">Vielen <span class="accent">Dank.</span></h1>
+  <p class="sub">Ihr Interesse wurde erfolgreich angemeldet. Wir melden uns in Kürze bei Ihnen.</p>
+  <a class="btn outline" href="{{ url_for('index') }}">Zurück</a>
+</main>
+{% endblock %}
