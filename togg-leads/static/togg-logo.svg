@@ -1,0 +1,6 @@
+<!-- Platzhalter – durch das Original ersetzen: curl -o static/togg-logo.svg https://togg-leads.vercel.app/togg-logo.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40">
+  <path d="M2 20 L24 2 L40 2 L22 20 L40 38 L24 38 Z" fill="#4fb3e3"/>
+  <path d="M78 20 L56 2 L40 2 L58 20 L40 38 L56 38 Z" fill="#2f8fc9"/>
+  <text x="90" y="31" font-family="Inter, Manrope, system-ui, sans-serif" font-size="32" font-weight="500" fill="#1d1d1f">Togg</text>
+</svg>

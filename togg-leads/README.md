@@ -22,6 +22,16 @@ python app.py
 | Admin-Ansicht        | http://127.0.0.1:5000/admin        |
 | Datenschutz          | http://127.0.0.1:5000/datenschutz  |
 
+## Logo
+
+`static/togg-logo.svg` ist ein Platzhalter. Original-Logo einmalig herunterladen:
+
+```bash
+curl -o static/togg-logo.svg https://togg-leads.vercel.app/togg-logo.svg
+# Windows PowerShell:
+# Invoke-WebRequest https://togg-leads.vercel.app/togg-logo.svg -OutFile static/togg-logo.svg
+```
+
 ## Funktionen
 
 **Formular** – Name*, E-Mail*, Telefonnummer, Postleitzahl, Interesse* (Testfahrt / Finanzierung, Mehrfachauswahl),
