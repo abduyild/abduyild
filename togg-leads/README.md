@@ -24,13 +24,7 @@ python app.py
 
 ## Logo
 
-`static/togg-logo.svg` ist ein Platzhalter. Original-Logo einmalig herunterladen:
-
-```bash
-curl -o static/togg-logo.svg https://togg-leads.vercel.app/togg-logo.svg
-# Windows PowerShell:
-# Invoke-WebRequest https://togg-leads.vercel.app/togg-logo.svg -OutFile static/togg-logo.svg
-```
+Das Logo liegt unter `static/togg-logo.png` (Favicon: `static/favicon.png`) und kann dort einfach ausgetauscht werden.
 
 ## Funktionen
 
