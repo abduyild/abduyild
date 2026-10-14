@@ -1,18 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Datenschutz – Togg{% endblock %}
+{% block title %}Datenschutz – {{ cfg.brand_name }}{% endblock %}
 {% block body %}
 <main class="page prose">
   <header class="brand"><a href="{{ url_for('index') }}">{% include "_logo.html" %}</a></header>
   <h1>Datenschutzerklärung</h1>
-  <p><strong>Hinweis:</strong> Dies ist ein Platzhalter für das lokale Demo-Projekt. Hier gehört die vollständige Datenschutzerklärung hin.</p>
   <h2 id="art13">Informationen zur Datenverarbeitung (Art. 13 DSGVO)</h2>
-  <ul>
-    <li><strong>Verantwortlicher:</strong> Togg Europe GmbH, Schelmenwasenstr. 34, 70567 Stuttgart</li>
-    <li><strong>Zweck:</strong> Bearbeitung Ihrer Anfrage (Testfahrt / Finanzierung) und Kontaktaufnahme</li>
-    <li><strong>Rechtsgrundlage:</strong> Einwilligung, Art. 6 Abs. 1 lit. a DSGVO</li>
-    <li><strong>Widerruf:</strong> jederzeit per E-Mail an toggcare@togg.eu</li>
-    <li><strong>Gespeicherte Daten:</strong> Name, E-Mail, optional Telefonnummer, Postleitzahl, Interesse, Notizen</li>
-  </ul>
-  <p><a href="{{ url_for('index') }}">← Zurück zum Formular</a></p>
+  <div class="pre">{{ t('privacy_text') }}</div>
+  <p><a href="javascript:history.back()">← Zurück</a></p>
 </main>
 {% endblock %}

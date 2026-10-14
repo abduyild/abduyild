@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{% block admin_title %}Admin{% endblock %} – {{ cfg.brand_name }}{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block body %}
+<header class="admin-bar">
+  <a href="{{ url_for('admin') }}" class="logo-link">{% include "_logo.html" %}</a>
+  <nav class="tabs">
+    {% if cfg.module_leads %}<a class="{{ 'active' if active == 'leads' }}" href="{{ url_for('admin') }}">Interessenten</a>{% endif %}
+    {% if cfg.module_queue %}<a class="{{ 'active' if active == 'queue' }}" href="{{ url_for('queue.admin_queue') }}">Warteschlange</a>{% endif %}
+    <a class="{{ 'active' if active == 'settings' }}" href="{{ url_for('admin_settings') }}">Einstellungen</a>
+  </nav>
+  <div class="bar-actions">
+    <a class="btn outline" href="{{ request.full_path }}">Aktualisieren</a>
+    <form method="post" action="{{ url_for('admin_logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn ghost icon" title="Abmelden" aria-label="Abmelden"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1H8M13 6l4 4-4 4M17 10H8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </form>
+  </div>
+</header>
+<main class="admin-main">
+  {% if default_password %}
+    <p class="flash warn">Es ist noch das Standard-Passwort „admin“ aktiv. <a href="{{ url_for('admin_settings') }}#passwort">Jetzt ändern →</a></p>
+  {% endif %}
+  {% include "_flashes.html" %}
+  {% block main %}{% endblock %}
+</main>
+{% endblock %}

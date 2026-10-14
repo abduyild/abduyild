@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Nr. {{ entry.number }} – {{ cfg.brand_name }}{% endblock %}
+{% block body_class %}status-page{% endblock %}
+{% block body %}
+<main class="page center">
+  <header class="brand">{% include "_logo.html" %}</header>
+
+  <section id="status" class="status-box s-{{ state.status }}" aria-live="polite">
+    <p class="status-label">Ihre Nummer</p>
+    <div class="ticket-number">{{ entry.number }}</div>
+    <h1 id="status-title" class="status-title"></h1>
+    <p id="status-text" class="status-text"></p>
+  </section>
+
+  <div id="alerts-box" class="alerts-box">
+    <button type="button" id="enable-alerts" class="btn primary wide">🔔 Ton &amp; Benachrichtigung aktivieren</button>
+    <p class="legal">Empfohlen: So klingelt und vibriert Ihr Handy, wenn Sie dran sind. Bitte diese Seite geöffnet lassen.</p>
+  </div>
+
+  <p class="legal">Hallo {{ entry.name.split(' ')[0] }} – wir rufen Sie zusätzlich unter {{ entry.phone }} an.</p>
+
+  <form method="post" action="{{ url_for('queue.cancel', token=entry.token) }}" id="cancel-form"
+        onsubmit="return confirm('Möchten Sie sich wirklich aus der Warteschlange austragen?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="link">Ich möchte doch nicht mehr warten</button>
+  </form>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const TOKEN = {{ entry.token|tojson }};
+  const URL_JSON = {{ url_for('queue.status_json', token=entry.token)|tojson }};
+  const TEXTS = {
+    waiting: {{ t('queue_waiting_text')|tojson }},
+    called: {{ t('queue_called_text')|tojson }},
+    brand: {{ cfg.brand_name|tojson }},
+  };
+  const box = document.getElementById("status");
+  const title = document.getElementById("status-title");
+  const text = document.getElementById("status-text");
+  const cancelForm = document.getElementById("cancel-form");
+  const alertsBox = document.getElementById("alerts-box");
+  const storeKey = "called-" + TOKEN;
+  let audio = null, wakeLock = null, swReg = null, blink = null;
+
+  function lastAlerted() { try { return localStorage.getItem(storeKey) || ""; } catch (e) { return ""; } }
+  function setAlerted(v) { try { localStorage.setItem(storeKey, v); } catch (e) {} }
+
+  function render(s) {
+    box.className = "status-box s-" + s.status;
+    const active = s.status === "wartend" || s.status === "aufgerufen";
+    cancelForm.hidden = !active;
+    alertsBox.hidden = s.status !== "wartend";
+    if (s.status === "wartend") {
+      title.textContent = s.ahead === 0 ? "Sie sind als Nächstes dran!" :
+        `Noch ${s.ahead} ${s.ahead === 1 ? "Person" : "Personen"} vor Ihnen`;
+      text.textContent = (s.eta !== null ? (s.eta === 0 ? "Gleich geht's los. " : `Wartezeit ca. ${s.eta} Min. `) : "") + TEXTS.waiting;
+    } else if (s.status === "aufgerufen") {
+      title.textContent = "Sie sind dran!";
+      text.textContent = TEXTS.called;
+    } else if (s.status === "unterwegs") {
+      title.textContent = "Gute Fahrt!";
+      text.textContent = `Viel Spaß bei Ihrer ${TEXTS.brand}-Probefahrt.`;
+    } else if (s.status === "fertig") {
+      title.textContent = "Danke für Ihre Probefahrt!";
+      text.textContent = "Wir hoffen, es hat Ihnen gefallen.";
+    } else if (s.status === "nicht_erschienen") {
+      title.textContent = "Wir haben Sie verpasst";
+      text.textContent = "Sie wurden aufgerufen, aber nicht angetroffen. Bitte melden Sie sich direkt am Stand.";
+    } else {
+      title.textContent = "Abgemeldet";
+      text.textContent = "Sie sind nicht mehr in der Warteschlange.";
+    }
+    if (s.status === "aufgerufen" && s.called_at && s.called_at !== lastAlerted()) {
+      setAlerted(s.called_at);
+      ring();
+    }
+    if (s.status !== "aufgerufen" && blink) { clearInterval(blink); blink = null; document.title = `Nr. ${s.number}`; }
+  }
+
+  function beep() {
+    if (!audio) return;
+    const t0 = audio.currentTime;
+    [0, 0.35, 0.7, 1.4, 1.75, 2.1].forEach((d, i) => {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.frequency.value = i % 3 === 2 ? 1046 : 784;
+      g.gain.setValueAtTime(0.0001, t0 + d);
+      g.gain.exponentialRampToValueAtTime(0.5, t0 + d + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.3);
+      o.connect(g).connect(audio.destination);
+      o.start(t0 + d); o.stop(t0 + d + 0.32);
+    });
+  }
+
+  function ring() {
+    beep();
+    if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 900]);
+    const msg = { body: TEXTS.called, tag: "called-" + TOKEN, renotify: true, requireInteraction: true, data: { url: location.href } };
+    try {
+      if ("Notification" in window && Notification.permission === "granted") {
+        if (swReg) swReg.showNotification("Sie sind dran! 🚗", msg);
+        else new Notification("Sie sind dran! 🚗", msg);
+      }
+    } catch (e) {}
+    let on = false;
+    if (!blink) blink = setInterval(() => { on = !on; document.title = on ? "🔔 SIE SIND DRAN!" : TEXTS.brand; }, 1000);
+  }
+
+  async function enableAlerts() {
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); await audio.resume(); } catch (e) {}
+    try {
+      if ("serviceWorker" in navigator) swReg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    } catch (e) {}
+    try { if ("Notification" in window && Notification.permission === "default") await Notification.requestPermission(); } catch (e) {}
+    try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
+    beep();
+    const btn = document.getElementById("enable-alerts");
+    btn.textContent = "✓ Benachrichtigungen aktiv";
+    btn.classList.replace("primary", "outline");
+  }
+  document.getElementById("enable-alerts").addEventListener("click", enableAlerts);
+
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible") {
+      poll();
+      if (wakeLock !== null) { try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {} }
+    }
+  });
+
+  async function poll() {
+    try {
+      const r = await fetch(URL_JSON, { cache: "no-store" });
+      if (r.ok) render(await r.json());
+    } catch (e) {}
+  }
+
+  const initial = {{ state|tojson }};
+  render(initial);
+  setInterval(poll, 5000);
+})();
+</script>
+{% endblock %}

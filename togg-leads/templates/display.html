@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Aufruf – {{ cfg.brand_name }}{% endblock %}
+{% block body_class %}display{% endblock %}
+{% block body %}
+<div class="display-wrap">
+  <header class="display-head">
+    {% include "_logo.html" %}
+    <span id="clock"></span>
+  </header>
+  <section class="display-main">
+    <div class="display-called">
+      <h2>Jetzt dran</h2>
+      <div id="called" class="called-grid"></div>
+      <p id="called-empty" class="display-muted">Bitte haben Sie einen Moment Geduld.</p>
+    </div>
+    <aside class="display-side">
+      <h2>Als Nächstes</h2>
+      <div id="next" class="next-list"></div>
+      <p id="wait-info" class="display-muted"></p>
+      <div class="display-qr">
+        <img src="{{ url_for('queue.qr_svg', p=url_for('queue.signup')) }}" alt="QR-Code zur Anmeldung">
+        <p><strong>Probefahrt?</strong><br>QR-Code scannen &amp; anmelden</p>
+      </div>
+    </aside>
+  </section>
+  <button type="button" id="sound" class="display-sound">🔈 Klicken für Ton &amp; Vollbild</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const URL_JSON = {{ url_for('queue.display_json')|tojson }};
+  let audio = null, last = null;
+  const $ = (id) => document.getElementById(id);
+
+  function gong() {
+    if (!audio) return;
+    const t0 = audio.currentTime;
+    [[659, 0], [523, 0.6]].forEach(([f, d]) => {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0 + d);
+      g.gain.exponentialRampToValueAtTime(0.6, t0 + d + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 1.4);
+      o.connect(g).connect(audio.destination); o.start(t0 + d); o.stop(t0 + d + 1.5);
+    });
+  }
+
+  function render(s) {
+    $("called").innerHTML = "";
+    s.called.forEach((n, i) => {
+      const el = document.createElement("div");
+      el.className = "called-num" + (i === 0 ? " newest" : "");
+      el.textContent = n;
+      $("called").appendChild(el);
+    });
+    $("called-empty").hidden = s.called.length > 0;
+    $("next").innerHTML = "";
+    s.next.forEach((n) => { const el = document.createElement("span"); el.textContent = n; $("next").appendChild(el); });
+    if (!s.next.length) $("next").innerHTML = '<span class="none">–</span>';
+    $("wait-info").textContent = s.waiting
+      ? `${s.waiting} wartend` + (s.eta !== null ? ` · Wartezeit ca. ${s.eta} Min.` : "")
+      : "Aktuell keine Wartezeit";
+    if (last !== null && s.last_called_at && s.last_called_at > last) {
+      gong();
+      document.querySelector(".called-num.newest")?.classList.add("flash-in");
+    }
+    last = s.last_called_at || last || "";
+  }
+
+  async function poll() {
+    try { const r = await fetch(URL_JSON, { cache: "no-store" }); if (r.ok) render(await r.json()); } catch (e) {}
+  }
+
+  $("sound").addEventListener("click", async () => {
+    try { audio = new (window.AudioContext || window.webkitAudioContext)(); await audio.resume(); gong(); } catch (e) {}
+    try { await document.documentElement.requestFullscreen(); } catch (e) {}
+    $("sound").hidden = true;
+  });
+
+  setInterval(() => { $("clock").textContent = new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); }, 1000);
+  render({{ state|tojson }});
+  setInterval(poll, 4000);
+})();
+</script>
+{% endblock %}

@@ -4,8 +4,8 @@
 <main class="page">
   <header class="brand">{% include "_logo.html" %}</header>
 
-  <h1 class="headline">Entdecken Sie <span class="accent">Togg.</span></h1>
-  <p class="sub">Sie interessieren sich für Togg? Hinterlassen Sie uns gern Ihre Kontaktdaten.</p>
+  <h1 class="headline">{{ t('headline') }} <span class="accent">{{ t('headline_accent') }}</span></h1>
+  <p class="sub">{{ t('subline') }}</p>
 
   <form method="post" action="{{ url_for('index') }}" novalidate class="lead-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -35,8 +35,9 @@
       {{ err('zip_code') }}
     </label>
 
+    {% if interests %}
     <div class="field">
-      <span class="lbl">Ihr Interesse <em>*</em> <small>· Mehrfachauswahl möglich</small></span>
+      <span class="lbl">Ihr Interesse <em>*</em>{% if interests|length > 1 %} <small>· Mehrfachauswahl möglich</small>{% endif %}</span>
       <div class="options">
         {% for i in interests %}
           <label class="option">
@@ -48,29 +49,30 @@
       </div>
       {{ err('interests') }}
     </div>
+    {% endif %}
 
     <label class="field">
       <span class="lbl">Notizen <small>· optional</small></span>
-      <textarea name="notes" rows="3" maxlength="2000" placeholder="Modell, Wunschtermin, Fragen …">{{ data.get('notes', '') }}</textarea>
+      <textarea name="notes" rows="3" maxlength="2000" placeholder="{{ t('notes_placeholder') }}">{{ data.get('notes', '') }}</textarea>
       {{ err('notes') }}
     </label>
 
     <label class="consent {{ 'invalid' if errors.consent }}">
       <input type="checkbox" name="consent" {% if data.get('consent') %}checked{% endif %}>
       <span class="box"></span>
-      <span>Ich willige ein, dass die Togg Europe GmbH die von mir angegebenen Daten speichert und mich zu meinem ausgewählten Interesse (Testfahrt und/oder Finanzierung) per E-Mail und Telefon kontaktiert. Diese Einwilligung ist freiwillig. Ich kann sie jederzeit mit Wirkung für die Zukunft widerrufen, z. B. per E-Mail an toggcare@togg.eu. Die Rechtmäßigkeit der bis zum Widerruf erfolgten Verarbeitung bleibt davon unberührt. <em>*</em></span>
+      <span>{{ t('consent_text') }} <em>*</em></span>
     </label>
     {{ err('consent') }}
 
     <p class="legal">
-      Verantwortlich für die Datenverarbeitung ist die Togg Europe GmbH, Schelmenwasenstr. 34, 70567 Stuttgart. Ihre Daten werden ausschließlich zur Bearbeitung Ihrer Anfrage und zur Kontaktaufnahme auf Grundlage Ihrer Einwilligung (Art. 6 Abs. 1 lit. a DSGVO) verarbeitet und nicht zu anderen Zwecken genutzt.
+      {{ t('legal_text') }}
       <a href="{{ url_for('privacy') }}">Vollständige Datenschutzerklärung</a>
     </p>
     <p class="legal"><a href="{{ url_for('privacy') }}#art13">Informationen zur Datenverarbeitung (Art. 13 DSGVO)</a></p>
 
     <div class="submit-row">
       <span class="hint">* Pflichtfeld</span>
-      <button type="submit" class="btn primary">Interesse anmelden →</button>
+      <button type="submit" class="btn primary">{{ t('submit_label') }}</button>
     </div>
   </form>
 </main>

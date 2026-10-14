@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% macro err(name) %}{% if errors.get(name) %}<p class="err">{{ errors[name] }}</p>{% endif %}{% endmacro %}
+{% block title %}{{ t('queue_headline') }} {{ t('queue_headline_accent') }} – {{ cfg.brand_name }}{% endblock %}
+{% block body_class %}{{ 'kiosk' if kiosk }}{% endblock %}
+{% block body %}
+<main class="page">
+  <header class="brand">{% include "_logo.html" %}</header>
+
+  <h1 class="headline">{{ t('queue_headline') }} <span class="accent">{{ t('queue_headline_accent') }}</span></h1>
+  <p class="sub">{{ t('queue_subline') }}</p>
+
+  <div class="queue-info">
+    {% if state.waiting %}
+      <span><strong>{{ state.waiting }}</strong> {{ 'Person wartet' if state.waiting == 1 else 'Personen warten' }}</span>
+      {% if state.eta is not none %}<span>Wartezeit ca. <strong>{{ state.eta }} Min.</strong></span>{% endif %}
+    {% else %}
+      <span>Aktuell <strong>keine Wartezeit</strong></span>
+    {% endif %}
+  </div>
+
+  <form method="post" action="{{ url_for('queue.signup') }}" novalidate class="lead-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% if kiosk %}<input type="hidden" name="kiosk" value="1">{% endif %}
+    <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+    <label class="field">
+      <span class="lbl">Name <em>*</em></span>
+      <input name="name" value="{{ data.get('name', '') }}" autocomplete="{{ 'off' if kiosk else 'name' }}" required class="{{ 'invalid' if errors.name }}">
+      {{ err('name') }}
+    </label>
+
+    <label class="field">
+      <span class="lbl">Telefonnummer <em>*</em> <small>· damit wir Sie aufrufen können</small></span>
+      <input type="tel" name="phone" value="{{ data.get('phone', '') }}" autocomplete="{{ 'off' if kiosk else 'tel' }}" required class="{{ 'invalid' if errors.phone }}">
+      {{ err('phone') }}
+    </label>
+
+    <label class="field">
+      <span class="lbl">E-Mail <small>· optional</small></span>
+      <input type="email" name="email" value="{{ data.get('email', '') }}" autocomplete="{{ 'off' if kiosk else 'email' }}" class="{{ 'invalid' if errors.email }}">
+      {{ err('email') }}
+    </label>
+
+    <label class="consent {{ 'invalid' if errors.consent }}">
+      <input type="checkbox" name="consent">
+      <span class="box"></span>
+      <span>{{ t('queue_consent_text') }} <em>*</em></span>
+    </label>
+    {{ err('consent') }}
+    <p class="legal"><a href="{{ url_for('privacy') }}">Datenschutzerklärung</a></p>
+
+    <div class="submit-row">
+      <span class="hint">* Pflichtfeld</span>
+      <button type="submit" class="btn primary">{{ t('queue_submit_label') }}</button>
+    </div>
+  </form>
+</main>
+{% endblock %}

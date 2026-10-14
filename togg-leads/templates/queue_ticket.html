@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Nr. {{ entry.number }} – {{ cfg.brand_name }}{% endblock %}
+{% block body_class %}kiosk{% endblock %}
+{% block body %}
+<main class="page center">
+  <header class="brand">{% include "_logo.html" %}</header>
+  <p class="sub">Danke, {{ entry.name.split(' ')[0] }}! Ihre Nummer:</p>
+  <div class="ticket-number">{{ entry.number }}</div>
+  <div class="ticket-qr">
+    <img src="{{ url_for('queue.qr_svg', p=url_for('queue.status', token=entry.token)) }}" alt="QR-Code zur Statusseite">
+    <p><strong>QR-Code mit dem Handy scannen</strong><br>und live sehen, wann Sie dran sind.</p>
+  </div>
+  <p class="legal">Wir rufen Sie zusätzlich unter {{ entry.phone }} an, wenn Sie an der Reihe sind.</p>
+  <a class="btn primary" href="{{ url_for('queue.signup', kiosk='1') }}">Fertig – nächste Anmeldung</a>
+  <p class="legal" id="countdown"></p>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+  // Kiosk: nach 60 Sekunden automatisch zurück zum Formular
+  let left = 60;
+  const el = document.getElementById("countdown");
+  setInterval(() => {
+    left -= 1;
+    el.textContent = `Automatisch zurück in ${left} s`;
+    if (left <= 0) location.href = {{ url_for('queue.signup', kiosk='1')|tojson }};
+  }, 1000);
+</script>
+{% endblock %}

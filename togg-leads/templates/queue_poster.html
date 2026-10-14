@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Aushang – {{ cfg.brand_name }}{% endblock %}
+{% block body_class %}poster{% endblock %}
+{% block body %}
+<main class="poster-page">
+  {% include "_logo.html" %}
+  <h1 class="headline">{{ t('queue_headline') }} <span class="accent">{{ t('queue_headline_accent') }}</span></h1>
+  <p class="sub">QR-Code scannen, eintragen – wir rufen Sie auf, sobald Sie dran sind.</p>
+  <img class="poster-qr" src="{{ url_for('queue.qr_svg', p=url_for('queue.signup')) }}" alt="QR-Code">
+  <p class="poster-url">{{ signup_url }}</p>
+  <button class="btn primary no-print" onclick="window.print()">Drucken</button>
+</main>
+{% endblock %}

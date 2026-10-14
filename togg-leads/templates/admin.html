@@ -1,32 +1,19 @@
-{% extends "base.html" %}
-{% block title %}Interessenten – Togg Admin{% endblock %}
-{% block body_class %}admin{% endblock %}
-{% block body %}
-<header class="admin-bar">
-  {% include "_logo.html" %}
-  <div class="bar-actions">
-    <a class="btn outline" href="{{ url_for('admin', q=q, interest=interest) }}">Aktualisieren</a>
-    <form method="post" action="{{ url_for('admin_logout') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button class="btn ghost icon" title="Abmelden" aria-label="Abmelden"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1H8M13 6l4 4-4 4M17 10H8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    </form>
-  </div>
-</header>
-
-<main class="admin-main">
+{% extends "admin_base.html" %}
+{% set active = 'leads' %}
+{% block admin_title %}Interessenten{% endblock %}
+{% block main %}
   <div class="title-row">
     <h1 class="title">Interessenten</h1>
-    <span class="count">{{ leads|length }} von {{ stats.total }}</span>
+    <span class="count">{{ leads|length }} von {{ total }}</span>
   </div>
 
   <section class="stats">
-    <div class="stat"><span>Gesamt</span><strong>{{ stats.total }}</strong></div>
-    <div class="stat"><span>Testfahrt</span><strong class="accent">{{ stats.Testfahrt }}</strong></div>
-    <div class="stat"><span>Finanzierung</span><strong class="accent">{{ stats.Finanzierung }}</strong></div>
-    <div class="stat"><span>Heute</span><strong>{{ stats.today }}</strong></div>
+    {% for label, value, accent in stats %}
+      <div class="stat"><span>{{ label }}</span><strong class="{{ 'accent' if accent }}">{{ value }}</strong></div>
+    {% endfor %}
   </section>
 
-  <form method="get" class="search" id="search">
+  <form method="get" class="search">
     <input type="search" name="q" value="{{ q }}" placeholder="Suche: Name, E-Mail, Telefon, PLZ, Notizen …">
     {% if interest %}<input type="hidden" name="interest" value="{{ interest }}">{% endif %}
   </form>
@@ -49,15 +36,14 @@
         <div class="card-head">
           <div>
             <h2>{{ l.name }}</h2>
-            <time>{{ l.created_at|de_date }}</time>
+            <time>{{ l.created_at|de_date }}{% if l.source and l.source != 'Formular' %} · {{ l.source }}{% endif %}</time>
           </div>
           <div class="tags">
-            {% for i in l.interest_list %}<span class="tag {{ 'tf' if i == 'Testfahrt' else 'fi' }}">{{ i }}</span>{% endfor %}
+            {% for i in l.interest_list %}<span class="tag {{ 'tf' if interests and i == interests[0] else 'fi' }}">{{ i }}</span>{% endfor %}
           </div>
         </div>
-        <p class="contact"><a href="mailto:{{ l.email }}">{{ l.email }}</a></p>
-        {% set meta = [l.phone, l.zip_code]|select|list %}
-        {% if meta %}<p class="meta">
+        {% if l.email %}<p class="contact"><a href="mailto:{{ l.email }}">{{ l.email }}</a></p>{% endif %}
+        {% if l.phone or l.zip_code %}<p class="meta">
           {% if l.phone %}<a href="tel:{{ l.phone }}">{{ l.phone }}</a>{% endif %}{% if l.phone and l.zip_code %} · {% endif %}{{ l.zip_code }}
         </p>{% endif %}
         {% if l.notes %}<p class="notes">{{ l.notes }}</p>{% endif %}
@@ -73,5 +59,4 @@
       <p class="empty">Keine Interessenten gefunden.</p>
     {% endfor %}
   </section>
-</main>
 {% endblock %}

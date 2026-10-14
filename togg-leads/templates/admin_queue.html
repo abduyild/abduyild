@@ -1,0 +1,83 @@
+{% extends "admin_base.html" %}
+{% set active = 'queue' %}
+{% block admin_title %}Warteschlange{% endblock %}
+{% block main %}
+  <div class="title-row">
+    <h1 class="title">Warteschlange</h1>
+    <span class="count" id="live-dot">● live</span>
+  </div>
+
+  <nav class="chips">
+    <a class="chip" href="{{ url_for('queue.signup', kiosk='1') }}" target="_blank">Tablet-Modus ↗</a>
+    <a class="chip" href="{{ url_for('queue.display') }}" target="_blank">Aufruf-Anzeige ↗</a>
+    <a class="chip" href="{{ url_for('queue.poster') }}" target="_blank">QR-Aushang drucken</a>
+    <a class="chip" href="{{ url_for('queue.export_csv') }}">CSV</a>
+    <a class="chip excel" href="{{ url_for('queue.export_xlsx') }}">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 8h15M2.5 12h15M8 8v8.5" stroke="currentColor" stroke-width="1.6"/></svg>
+      Excel
+    </a>
+  </nav>
+
+  <div id="queue-list" data-url="{{ url_for('queue.admin_queue_list') }}">
+    {% include "_queue_list.html" %}
+  </div>
+
+  <form method="post" action="{{ url_for('queue.admin_queue_clear') }}" class="danger-zone"
+        onsubmit="return confirm('Alle Wartenden und Aufgerufenen als „abgesagt“ markieren?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="link">Tagesabschluss: Warteschlange leeren</button>
+  </form>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const list = document.getElementById("queue-list");
+  const CSRF = {{ csrf_token|tojson }};
+  let loadedAt = Date.now();
+
+  function fmt(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0");
+  }
+  function tick() {
+    const extra = (Date.now() - loadedAt) / 1000;
+    list.querySelectorAll("[data-elapsed]").forEach((el) => {
+      el.textContent = fmt(Number(el.dataset.elapsed) + extra);
+    });
+  }
+
+  function busy() {
+    const a = document.activeElement;
+    if (list.querySelector("details[open]")) return true;
+    return a && list.contains(a) && ["SELECT", "INPUT", "TEXTAREA"].includes(a.tagName);
+  }
+
+  async function refresh(force) {
+    if (!force && busy()) return;
+    try {
+      const r = await fetch(list.dataset.url, { cache: "no-store" });
+      if (r.redirected) { location.reload(); return; }   // Session abgelaufen
+      if (r.ok) { list.innerHTML = await r.text(); loadedAt = Date.now(); tick(); }
+      document.getElementById("live-dot").classList.remove("offline");
+    } catch (e) {
+      document.getElementById("live-dot").classList.add("offline");
+    }
+  }
+
+  // Aktionen ohne Seiten-Neuladen (Scrollposition bleibt)
+  list.addEventListener("submit", async (ev) => {
+    const form = ev.target;
+    ev.preventDefault();
+    if (form.dataset.confirm && !confirm(form.dataset.confirm)) return;
+    const body = new FormData(form);
+    body.set("csrf_token", CSRF);
+    await fetch(form.action, { method: "POST", body, headers: { "X-Requested-With": "fetch" } });
+    refresh(true);
+  });
+
+  setInterval(tick, 1000);
+  setInterval(() => refresh(false), 5000);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "admin_base.html" %}
+{% set active = 'settings' %}
+{% block admin_title %}Einstellungen{% endblock %}
+{% block main %}
+  <div class="title-row">
+    <h1 class="title">Einstellungen</h1>
+  </div>
+  <p class="muted">Platzhalter in Texten: <code>{marke}</code> <code>{firma}</code> <code>{adresse}</code> <code>{email}</code>
+    – so musst du für eine andere Marke nur Name, Logo, Farbe und Firma ändern.</p>
+
+  <form method="post" enctype="multipart/form-data" class="settings-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    {% for section, fields in schema %}
+    <fieldset class="card settings-card">
+      <legend>{{ section }}</legend>
+      {% for key, label, kind, help in fields %}
+        {% if kind == 'bool' %}
+          <label class="switch">
+            <input type="checkbox" name="{{ key }}" {% if cfg[key] %}checked{% endif %}>
+            <span class="slider"></span>
+            <span class="switch-text">{{ label }}{% if help %}<small>{{ help }}</small>{% endif %}</span>
+          </label>
+        {% elif kind == 'file' %}
+          <div class="field">
+            <span class="lbl">{{ label }}</span>
+            <div class="file-row">
+              <img class="preview {{ key }}" src="{{ logo_url if key == 'logo' else favicon_url }}" alt="">
+              <input type="file" name="{{ key }}" accept=".png,.jpg,.jpeg,.webp,.svg,.gif,.ico">
+            </div>
+            {% if cfg[key] %}<label class="inline-check"><input type="checkbox" name="{{ key }}_reset"> Standard wiederherstellen</label>{% endif %}
+            {% if help %}<small class="help">{{ help }}</small>{% endif %}
+          </div>
+        {% elif kind == 'color' %}
+          <label class="field">
+            <span class="lbl">{{ label }}</span>
+            <span class="color-row"><input type="color" name="{{ key }}" value="{{ cfg[key] }}"> <code>{{ cfg[key] }}</code></span>
+            {% if help %}<small class="help">{{ help }}</small>{% endif %}
+          </label>
+        {% elif kind == 'int' %}
+          <label class="field small-field">
+            <span class="lbl">{{ label }}</span>
+            <input type="number" name="{{ key }}" value="{{ cfg[key] }}" min="1" max="600">
+            {% if help %}<small class="help">{{ help }}</small>{% endif %}
+          </label>
+        {% elif kind in ('textarea', 'lines') %}
+          <label class="field">
+            <span class="lbl">{{ label }}</span>
+            <textarea name="{{ key }}" rows="{{ 3 if kind == 'lines' else 4 }}">{{ cfg[key] }}</textarea>
+            {% if help %}<small class="help">{{ help }}</small>{% endif %}
+          </label>
+        {% else %}
+          <label class="field">
+            <span class="lbl">{{ label }}</span>
+            <input name="{{ key }}" value="{{ cfg[key] }}">
+            {% if help %}<small class="help">{{ help }}</small>{% endif %}
+          </label>
+        {% endif %}
+      {% endfor %}
+    </fieldset>
+    {% endfor %}
+
+    <fieldset class="card settings-card" id="passwort">
+      <legend>Admin-Passwort</legend>
+      <div class="row2">
+        <label class="field"><span class="lbl">Neues Passwort</span><input type="password" name="new_password" autocomplete="new-password"></label>
+        <label class="field"><span class="lbl">Wiederholen</span><input type="password" name="new_password2" autocomplete="new-password"></label>
+      </div>
+      <small class="help">Leer lassen, um das Passwort nicht zu ändern. Mindestens 6 Zeichen.</small>
+    </fieldset>
+
+    <div class="sticky-save">
+      <button type="submit" class="btn primary">Speichern</button>
+    </div>
+  </form>
+
+  <form method="post" action="{{ url_for('admin_settings_reset') }}" class="danger-zone"
+        onsubmit="return confirm('Alle Texte, Logo und Farben auf Standard zurücksetzen? (Daten und Passwort bleiben erhalten)');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="link">Alle Einstellungen auf Standard zurücksetzen</button>
+  </form>
+{% endblock %}

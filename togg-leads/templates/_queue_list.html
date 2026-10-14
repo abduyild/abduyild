@@ -1,0 +1,140 @@
+{% macro action(e, name, label, cls='btn small outline', confirm=None) -%}
+  <form method="post" action="{{ url_for('queue.admin_queue_action', entry_id=e.id, action=name) }}" {% if confirm %}data-confirm="{{ confirm }}"{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="{{ cls }}">{{ label }}</button>
+  </form>
+{%- endmacro %}
+{% macro start_form(e, cls) -%}
+  <form method="post" action="{{ url_for('queue.admin_queue_action', entry_id=e.id, action='start') }}" class="start-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% if tracking and vehicles %}
+      <select name="vehicle" aria-label="Fahrzeug">
+        <option value="">Fahrzeug …</option>
+        {% for v in vehicles %}<option>{{ v }}</option>{% endfor %}
+      </select>
+    {% endif %}
+    <button class="{{ cls }}">{{ 'Fahrt starten ▶' if tracking else 'Erledigt ✓' }}</button>
+  </form>
+{%- endmacro %}
+{% macro contacts(e) -%}
+  <div class="contact-row">
+    <a class="btn small outline" href="{{ e.links.tel }}">📞 Anrufen</a>
+    <a class="btn small outline" href="{{ e.links.sms }}">💬 SMS</a>
+    <a class="btn small wa" href="{{ e.links.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>
+  </div>
+{%- endmacro %}
+
+<section class="stats">
+  {% for label, value, accent in stats %}
+    <div class="stat"><span>{{ label }}</span><strong class="{{ 'accent' if accent }}">{{ value }}</strong></div>
+  {% endfor %}
+</section>
+
+{% if called %}
+<h2 class="section-title">Aufgerufen <span class="pill">{{ called|length }}</span></h2>
+<section class="cards">
+  {% for e in called %}
+  <article class="card q-card called">
+    <div class="q-head">
+      <span class="q-num">{{ e.number }}</span>
+      <div class="q-who">
+        <h3>{{ e.name }}</h3>
+        <p class="meta">{{ e.phone }}{% if e.email %} · {{ e.email }}{% endif %}</p>
+      </div>
+      <div class="q-time"><small>aufgerufen vor</small><strong data-elapsed="{{ e.elapsed }}">–</strong></div>
+    </div>
+    {{ contacts(e) }}
+    <div class="q-actions">
+      {{ start_form(e, 'btn small primary') }}
+      {{ action(e, 'call', '🔔 Erneut aufrufen') }}
+      {{ action(e, 'requeue', 'Zurückstellen') }}
+      {{ action(e, 'noshow', 'Nicht erschienen', 'btn small ghost', 'Nr. ' ~ e.number ~ ' als „nicht erschienen“ markieren?') }}
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if tracking and driving %}
+<h2 class="section-title">Unterwegs <span class="pill">{{ driving|length }}</span></h2>
+<section class="cards">
+  {% for e in driving %}
+  <article class="card q-card driving">
+    <div class="q-head">
+      <span class="q-num">{{ e.number }}</span>
+      <div class="q-who">
+        <h3>{{ e.name }}</h3>
+        <p class="meta">{% if e.vehicle %}🚗 {{ e.vehicle }} · {% endif %}Start {{ e.started_at|de_time }}</p>
+      </div>
+      <div class="q-time"><small>Fahrzeit</small><strong data-elapsed="{{ e.elapsed }}">–</strong></div>
+    </div>
+    <div class="q-actions">
+      {{ action(e, 'end', 'Fahrt beenden ■', 'btn small primary') }}
+      <a class="btn small outline" href="{{ e.links.tel }}">📞 Anrufen</a>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+<h2 class="section-title">Wartend <span class="pill">{{ waiting|length }}</span></h2>
+<section class="cards">
+  {% for e in waiting %}
+  <article class="card q-card">
+    <div class="q-head">
+      <span class="q-num">{{ e.number }}</span>
+      <div class="q-who">
+        <h3>{{ e.name }}</h3>
+        <p class="meta">{{ e.phone }}{% if e.email %} · {{ e.email }}{% endif %}</p>
+      </div>
+      <div class="q-time"><small>wartet seit</small><strong data-elapsed="{{ e.elapsed }}">–</strong>
+        {% if e.eta %}<small>noch ~{{ e.eta }} Min.</small>{% endif %}</div>
+    </div>
+    <div class="q-actions">
+      {{ action(e, 'call', '🔔 Aufrufen', 'btn small primary' if loop.first else 'btn small outline') }}
+      {{ start_form(e, 'btn small outline') }}
+      <details class="more">
+        <summary class="btn small ghost">Kontakt …</summary>
+        {{ contacts(e) }}
+      </details>
+      {{ action(e, 'delete', 'Entfernen', 'btn small ghost', 'Nr. ' ~ e.number ~ ' (' ~ e.name ~ ') entfernen?') }}
+    </div>
+  </article>
+  {% else %}
+    <p class="empty">Niemand wartet gerade.</p>
+  {% endfor %}
+</section>
+
+{% if finished %}
+<h2 class="section-title">Heute abgeschlossen <span class="pill">{{ finished|length }}</span></h2>
+<div class="table-wrap">
+  <table class="q-table">
+    <thead><tr>
+      <th>Nr.</th><th>Name</th><th>Status</th><th>Angemeldet</th>
+      {% if tracking %}<th>Start</th><th>Ende</th><th>Dauer</th><th>Fahrzeug</th>{% endif %}
+      <th></th>
+    </tr></thead>
+    <tbody>
+      {% for e in finished %}
+      <tr>
+        <td><strong>{{ e.number }}</strong></td>
+        <td>{{ e.name }}<br><small class="muted">{{ e.phone }}</small></td>
+        <td><span class="tag {{ 'tf' if e.status == 'fertig' else 'fi' }}">{{ e.label }}</span></td>
+        <td>{{ e.created_at|de_time }}</td>
+        {% if tracking %}
+          <td>{{ e.started_at|de_time or '–' }}</td>
+          <td>{{ e.ended_at|de_time if e.started_at else '–' }}</td>
+          <td><strong>{{ e.duration if e.started_at else '–' }}</strong></td>
+          <td>{{ e.vehicle or '–' }}</td>
+        {% endif %}
+        <td class="row-actions">
+          {% if e.status in ('nicht_erschienen', 'abgesagt') %}{{ action(e, 'requeue', 'Wieder einreihen', 'link') }}{% endif %}
+          {% if e.status == 'fertig' and e.started_at and tracking %}{{ action(e, 'reopen', 'Fahrt fortsetzen', 'link') }}{% endif %}
+          {{ action(e, 'delete', 'Löschen', 'link', 'Eintrag Nr. ' ~ e.number ~ ' löschen?') }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
