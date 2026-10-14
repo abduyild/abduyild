@@ -1,2 +1,5 @@
 flask>=3.0
+waitress>=3.0
 openpyxl>=3.1
+qrcode>=7.4
+cryptography>=42
